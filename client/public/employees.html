@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Employees</title>
+</head>
+<body>
+  <h1>Employee Manager</h1>
+
+  <form id="addForm">
+    <input type="text" id="name" placeholder="Employee Name" required />
+    <button type="submit">Add Employee</button>
+  </form>
+
+  <ul id="employeeList"></ul>
+
+  <script>
+    async function loadEmployees() {
+      const res = await fetch('/employees');
+      const employees = await res.json();
+      const list = document.getElementById('employeeList');
+      list.innerHTML = '';
+      employees.forEach(e => {
+        const li = document.createElement('li');
+        li.textContent = e.name + ' ';
+        const del = document.createElement('button');
+        del.textContent = 'Delete';
+        del.onclick = async () => {
+          await fetch('/employees/' + e.id, { method: 'DELETE' });
+          loadEmployees();
+        };
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      await fetch('/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      document.getElementById('name').value = '';
+      loadEmployees();
+    });
+
+    loadEmployees();
+  </script>
+</body>
+</html>

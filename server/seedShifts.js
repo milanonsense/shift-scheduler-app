@@ -5,6 +5,7 @@ const dayjs = require('dayjs');
 //Defines employees
 const EMPLOYEES = Array.from({ length: 31 }, (_, i) => `Employee ${i + 1}`);
 
+
 //shift times
 const SHIFT_TIMES = [
    ['7:00', '3:00'],
@@ -52,7 +53,6 @@ function seedShifts() {
         );
       }
     }
-
     console.log('✔️ Seeded database with random shifts.');
   });
 

@@ -20,14 +20,23 @@ db.serialize(() => {
       UNIQUE(date, start_time) -- for upsert
     )
   `);
-
+  const manager_example = 'Mike the Manager';
   const insert = db.prepare('INSERT OR IGNORE INTO employees (name) VALUES (?)');
   for (let i = 1; i <= 31; i++) {
     insert.run(`Employee ${i}`);
   }
+  insert.run(manager_example);
   insert.finalize();
 
   console.log('Database initialized with employees and shifts table.');
 });
+  //sample manager data
+  
+  const manager_example_id = '99'
+
+
+  
+  //insert.finalize();
+
 
 db.close();
