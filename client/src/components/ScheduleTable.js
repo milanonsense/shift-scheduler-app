@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
+import { useAuth } from './AuthContext';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SHIFTS = [
@@ -9,24 +10,23 @@ const SHIFTS = [
   ['11:00', '4:00'],
   ['3:00', '7:00'],
   ['3:00', '8:00'],
-   ['3:00', '9:00'],
+  ['3:00', '9:00'],
   ['4:00', '9:00'],
 ];
 
-//The Main Part
 export default function ScheduleTable() {
   const [employees, setEmployees] = useState([]);
   const [schedule, setSchedule] = useState({});
   const [currentWeek, setCurrentWeek] = useState(dayjs());
+  const { user } = useAuth();
+  const isManager = user?.role === 'manager';
 
-  //Employee fetch only once
   useEffect(() => {
     fetch('http://localhost:5000/api/employees')
       .then(res => res.json())
       .then(data => setEmployees(data));
   }, []);
 
-  //when week changes shifts fetched 
   useEffect(() => {
     fetch(`http://localhost:5000/api/shifts?week=${currentWeek.format('YYYY-MM-DD')}`)
       .then(res => res.json())
@@ -40,27 +40,23 @@ export default function ScheduleTable() {
       });
   }, [currentWeek]);
 
-  //date string (YYYY-MM-DD) (0 = Mon, 6 = Sun)
-  const getDateForDay = (index, weekStart = currentWeek) => {
-    return weekStart.startOf('week').add(1 + index, 'day').format('YYYY-MM-DD');
-  };
+  const getDateForDay = (index, weekStart = currentWeek) =>
+    weekStart.startOf('week').add(1 + index, 'day').format('YYYY-MM-DD');
 
-  //dropdown
   const handleSelect = (dayIndex, shift, employeeName) => {
+    if (!isManager) return;
     const date = getDateForDay(dayIndex);
     const key = `${date}_${shift[0]}-${shift[1]}`;
     setSchedule(prev => ({ ...prev, [key]: employeeName }));
   };
 
-  //save button
   const handleSave = async () => {
-    //Checks if employees assigned more than once per day
-    const conflicts = {};
+    if (!isManager) return alert('Only managers can modify schedules.');
 
+    const conflicts = {};
     for (const key in schedule) {
       const [date] = key.split('_');
       const employee = schedule[key];
-
       if (!conflicts[date]) conflicts[date] = {};
       if (conflicts[date][employee]) {
         alert(`⚠️ Conflict: ${employee} is scheduled more than once on ${date}`);
@@ -69,7 +65,6 @@ export default function ScheduleTable() {
       conflicts[date][employee] = true;
     }
 
-    //If no conflicts with check, shifts will be saved
     const payloads = Object.entries(schedule).map(([key, employee_name]) => {
       const [date, timeRange] = key.split('_');
       const [start_time, end_time] = timeRange.split('-');
@@ -90,8 +85,8 @@ export default function ScheduleTable() {
   return (
     <div style={{ padding: '20px' }}>
       <h2>Shift Scheduler</h2>
+      <p>Welcome, {user?.username || 'Guest'} ({user?.role || 'unknown role'})</p>
 
-      {/* Week Navigation */}
       <div style={{ marginBottom: '1rem' }}>
         <button onClick={() => setCurrentWeek(currentWeek.subtract(1, 'week'))}>
           ← Previous Week
@@ -104,13 +99,16 @@ export default function ScheduleTable() {
         </button>
       </div>
 
-      {/* Schedule Table */}
       <table border="1" cellPadding="8" cellSpacing="0">
         <thead>
           <tr>
             <th>Shift</th>
             {DAYS.map((day, i) => (
-              <th key={i}>{day}<br />{getDateForDay(i)}</th>
+              <th key={i}>
+                {day}
+                <br />
+                {getDateForDay(i)}
+              </th>
             ))}
           </tr>
         </thead>
@@ -121,11 +119,14 @@ export default function ScheduleTable() {
               {DAYS.map((_, dayIndex) => {
                 const date = getDateForDay(dayIndex);
                 const key = `${date}_${shift[0]}-${shift[1]}`;
+                const assigned = schedule[key] || '';
+
                 return (
                   <td key={dayIndex}>
                     <select
-                      value={schedule[key] || ''}
+                      value={assigned}
                       onChange={e => handleSelect(dayIndex, shift, e.target.value)}
+                      disabled={!isManager}
                     >
                       <option value="">Select</option>
                       {employees.map(emp => (
@@ -140,10 +141,11 @@ export default function ScheduleTable() {
         </tbody>
       </table>
 
-      {/* Save Button */}
-      <div style={{ marginTop: '1rem' }}>
-        <button onClick={handleSave}>💾 Save Schedule</button>
-      </div>
+      {isManager && (
+        <div style={{ marginTop: '1rem' }}>
+          <button onClick={handleSave}>💾 Save Schedule</button>
+        </div>
+      )}
     </div>
   );
 }

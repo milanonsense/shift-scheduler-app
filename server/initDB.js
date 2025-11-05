@@ -1,8 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./shifts.db');
 
-//Create employee table
 db.serialize(() => {
+  // Create employees table
   db.run(`
     CREATE TABLE IF NOT EXISTS employees (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10,6 +10,7 @@ db.serialize(() => {
     )
   `);
 
+  // Create shifts table
   db.run(`
     CREATE TABLE IF NOT EXISTS shifts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,26 +18,39 @@ db.serialize(() => {
       date TEXT NOT NULL,
       start_time TEXT NOT NULL,
       end_time TEXT NOT NULL,
-      UNIQUE(date, start_time) -- for upsert
+      UNIQUE(date, start_time)
     )
   `);
-  const manager_example = 'Mike the Manager';
-  const insert = db.prepare('INSERT OR IGNORE INTO employees (name) VALUES (?)');
+
+  // Creates users table (for login + roles)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      role TEXT CHECK(role IN ('manager', 'employee')) NOT NULL
+    )
+  `);
+
+  //default manager user
+  const insertUser = db.prepare(`
+    INSERT OR IGNORE INTO users (username, password, role)
+    VALUES (?, ?, ?)
+  `);
+
+  //always at least one manager in database
+  insertUser.run('manager1', 'password123', 'manager');
+  insertUser.finalize();
+
+  // Insert example employees (if not already there)
+  const insertEmp = db.prepare('INSERT OR IGNORE INTO employees (name) VALUES (?)');
   for (let i = 1; i <= 31; i++) {
-    insert.run(`Employee ${i}`);
+    insertEmp.run(`Employee ${i}`);
   }
-  insert.run(manager_example);
-  insert.finalize();
-
-  console.log('Database initialized with employees and shifts table.');
+  insertEmp.run('Mike the Manager');
+  insertEmp.finalize();
+//initializing is complete
+  console.log('✅ Database initialized with users, employees, and shifts tables.');
 });
-  //sample manager data
-  
-  const manager_example_id = '99'
-
-
-  
-  //insert.finalize();
-
 
 db.close();
