@@ -53,7 +53,7 @@ function seedShifts() {
         );
       }
     }
-    console.log('✔️ Seeded database with random shifts.');
+    console.log('Seeded database with random shifts.');
   });
 
   db.close();

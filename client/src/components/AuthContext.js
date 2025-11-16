@@ -1,19 +1,17 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react'
 
-const AuthContext = createContext();
+const AuthContext = createContext() //holds authenticated data
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { username, role }
+export function AuthProvider({ children }) { //give all pages access to user info
+  const [user, setUser] = useState(null) //stores logged in user null means no user is currently logged in
 
-  return (
-    <AuthContext.Provider value={{ user, setUser }}>
+  return ( //makes user and set user avaliable for use
+    <AuthContext.Provider value={{ user, setUser }}> 
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
-//basically sets up a global authentication
-//allows user to be stored in one place 
+export const useAuth = () => useContext(AuthContext)
+
+//helps to get the info from user using useAuth simply
