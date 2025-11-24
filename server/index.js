@@ -7,10 +7,21 @@ const session = require("express-session")
 const SQLiteStore = require("connect-sqlite3")(session)
 
 const app = express()
+app.use( //lets frontend talk to backend - credentials true basically allows cookies/sessions to be sent
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+)
+//what i allow to be used basically
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true") //cookie request sessions yes 
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000") //frontend yes
+  res.header("Access-Control-Allow-Headers", "Content-Type") //json yes
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS") //htmi methods yea
+  next() //now you can go to next route
+})
 const PORT = 5000
-
-//lets frontend talk to backend - credentials true basically allows cookies/sessions to be sent
-app.use(cors({ origin: "http://localhost:3000", credentials: true }))
 app.use(express.json()) //express can read json requests
 
 app.use(
@@ -19,7 +30,12 @@ app.use(
     secret: "superdoopersecret", //secret to sign cookies
     resave: false, //dont save session if nothing changes
     saveUninitialized: false, 
-    cookie: { maxAge: 1000 * 60 * 60 * 2 }, //cookie lasts 2 hours then logs you out
+    cookie: {
+      // Allows browsers to store session cookie cross-origin
+      sameSite: "lax",
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 2,
+    }, //cookie lasts 2 hours then logs you out
   })
 )
 //connects to sqllite database
@@ -234,6 +250,28 @@ app.get('/api/shifts', (req, res) => {
     res.json(rows);
   })
 })
+//get all shifts of the week
+app.get("/api/shifts/week", (req, res) => {
+  const { start, end } = req.query //pulling the start and end 
+  //i need the start and end so i need to make sure its actually there
+  if (!start || !end) {
+    return res.status(400).json({ error: "Missing start or end date" })
+  } //connecting the shifts with the employee name with joining the users table and shifts table 
+  // + only returning dates by start time end time + ordering like a schedule all in sql 
+  const sql = `
+    SELECT s.id, s.date, s.start_time, s.end_time,
+           s.employee_id, u.username AS employee_name
+    FROM shifts s
+    LEFT JOIN users u ON s.employee_id = u.id     
+    WHERE s.date >= ? AND s.date <= ?
+    ORDER BY s.date, s.start_time
+  `
+  db.all(sql, [start, end], (err, rows) => { //run the sql and pass the start and end 
+    if (err) return res.status(500).json({ error: err.message }) //if any issues show an error message
+    res.json(rows) //if it works though this basically sends the matching list to the client side 
+  })
+})
+
 //create shift
 app.post('/api/shifts', async (req, res) => {
   try {
