@@ -68,40 +68,49 @@ function ManageEmployeesPage() {
   }
 
   return (
-    <div>
+  <div className="manage-container">
+    <div className="manage-header">
       <h2>Manage Employees</h2>
-      <form onSubmit={addEmployee} style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ marginRight: "0.5rem" }}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ marginRight: "0.5rem" }}
-        />
-        <button type="submit">Add Employee</button>
+    </div>
+    
+    <div className="add-employee-form">
+      <form onSubmit={addEmployee}>
+        <div className="form-row">
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            type="email"
+            className="form-input"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button type="submit" className="btn-add">Add Employee</button>
+        </div>
       </form>
+    </div>
+    
+    <div className="employee-list">
       <ul>
         {employees.map((e) => (
-          <li key={e.id}>
-            {e.username} ({e.email})
-            <button
-              onClick={() => deleteEmployee(e.id)}
-              style={{ marginLeft: "1rem" }}
-            >
+          <li key={e.id} className="employee-item">
+            <div className="employee-info">
+              {e.username} <span className="email">({e.email})</span>
+            </div>
+            <button className="btn-delete" onClick={() => deleteEmployee(e.id)}>
               Delete
             </button>
           </li>
         ))}
       </ul>
     </div>
-  );
+  </div>
+);
 }
 
 export default ManageEmployeesPage;

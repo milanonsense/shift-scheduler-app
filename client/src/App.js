@@ -5,6 +5,7 @@ import ManageEmployeesPage from "./components/ManageEmployeesPage";
 import AuthPage from "./components/AuthPage";
 import ViewSchedule from "./components/ViewSchedule";
 import { useAuth } from "./components/AuthContext";
+import './styles.css';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 

@@ -237,7 +237,7 @@ app.delete("/api/employees/:id", authenticate, requireManager, (req, res) => {
 })
 //gets shift of week
 app.get('/api/shifts', (req, res) => {
-  const weekStart = req.query.week; //2025-11-16
+  const weekStart = req.query.week
   //gets the shift data from sql db
   const sql = `
     SELECT s.id, s.date, s.start_time, s.end_time, s.employee_id, u.username as employee_name
@@ -247,7 +247,7 @@ app.get('/api/shifts', (req, res) => {
   `;
   db.all(sql, [weekStart, weekStart], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message })
-    res.json(rows);
+    res.json(rows)
   })
 })
 //get all shifts of the week

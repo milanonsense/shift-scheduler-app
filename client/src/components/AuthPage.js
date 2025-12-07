@@ -60,57 +60,72 @@ export default function AuthPage() {
     }
   }
   return (
-    <div style={{ padding: "20px" }}>
+  <div className="auth-container">
+    <div className="auth-card">
       <h2>{isRegistering ? "Register" : "Login"}</h2>
+      <p className="auth-subtitle">
+        {isRegistering ? "Create your account" : "Welcome back"}
+      </p>
 
-      <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        style={{ marginRight: "10px", display: "block", marginBottom: "10px" }}
-      />
+      <div className="form-group">
+        <label>Username</label>
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Enter username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+      </div>
 
       {isRegistering && (
         <>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ marginRight: "10px", display: "block", marginBottom: "10px" }}
-          />
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              className="form-input"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            style={{ marginRight: "10px", display: "block", marginBottom: "10px" }}
-          >
-            <option value="employee">Employee</option>
-            <option value="manager">Manager</option>
-          </select>
+          <div className="form-group">
+            <label>Role</label>
+            <select
+              className="form-select"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="employee">Employee</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
         </>
       )}
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ marginRight: "10px", display: "block", marginBottom: "10px" }}
-      />
+      <div className="form-group">
+        <label>Password</label>
+        <input
+          type="password"
+          className="form-input"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
 
-      {isRegistering ? (
-        <button onClick={handleRegister}>Create Account</button>
-      ) : (
-        <button onClick={handleLogin}>Login</button>
-      )}
+      <button className="btn-primary" onClick={isRegistering ? handleRegister : handleLogin}>
+        {isRegistering ? "Create Account" : "Login"}
+      </button>
 
-      <div style={{ marginTop: "15px" }}>
-        <button onClick={() => setIsRegistering(!isRegistering)}>
+      <div className="auth-toggle">
+        <button className="btn-link" onClick={() => setIsRegistering(!isRegistering)}>
           {isRegistering ? "Already have an account? Login" : "New user? Register"}
         </button>
       </div>
     </div>
-  );
+  </div>
+);
 }
