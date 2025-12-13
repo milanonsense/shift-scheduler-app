@@ -7,52 +7,46 @@ const session = require("express-session")
 const SQLiteStore = require("connect-sqlite3")(session)
 
 const app = express()
-app.use( //lets frontend talk to backend - credentials true basically allows cookies/sessions to be sent
+app.use( 
   cors({
     origin: "http://localhost:3000",
     credentials: true,
   })
 )
-//what i allow to be used basically
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Credentials", "true") //cookie request sessions yes 
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000") //frontend yes
-  res.header("Access-Control-Allow-Headers", "Content-Type") //json yes
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS") //htmi methods yea
-  next() //now you can go to next route
+  res.header("Access-Control-Allow-Credentials", "true") 
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000") 
+  res.header("Access-Control-Allow-Headers", "Content-Type") 
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS") 
+  next() 
 })
 const PORT = 5000
-app.use(express.json()) //express can read json requests
-
+app.use(express.json()) 
 app.use(
   session({
-    store: new SQLiteStore({ db: "sessions.sqlite" }), //stores sessions in sqlite
-    secret: "superdoopersecret", //secret to sign cookies
-    resave: false, //dont save session if nothing changes
+    store: new SQLiteStore({ db: "sessions.sqlite" }), 
+    secret: "superdoopersecret", 
+    resave: false, 
     saveUninitialized: false, 
     cookie: {
-      // Allows browsers to store session cookie cross-origin
       sameSite: "lax",
       secure: false,
       maxAge: 1000 * 60 * 60 * 2,
     }, //cookie lasts 2 hours then logs you out
   })
 )
-//connects to sqllite database
 const db = new sqlite3.Database('./shifts.db', (err) => {
   if (err) return console.error(err.message);
   console.log("Connected to SQLite");
-});
-//helps run sql w promises basically like a real promise it will happen but not immediately
+})
 const runAsync = (sql, params = []) => {
-  return new Promise((resolve, reject) => { //resolve = success, reject = error
+  return new Promise((resolve, reject) => { 
     db.run(sql, params, function (err) {
-      if (err) reject(err);
-      else resolve(this.lastID); //return id of new row
+      if (err) reject(err)
+      else resolve(this.lastID)
     })
   })
-};
-//makes usr tables in sql
+}
 db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,9 +55,7 @@ db.run(`
     password TEXT NOT NULL,
     role TEXT CHECK(role IN ('manager', 'employee')) NOT NULL
   )
-`);
-
-//creates shift tables in sql
+`)
 db.run(`
   CREATE TABLE IF NOT EXISTS shifts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,104 +67,86 @@ db.run(`
   )
 `);
 
-// Create default manager
 (async () => {
-  const hashed = await bcrypt.hash("password123", 10)
-  //inserts if it doesnt already exist
+  const hashed = await bcrypt.hash("password123", 10);
   db.run(
     `INSERT OR IGNORE INTO users (username, email, password, role)
      VALUES (?, ?, ?, 'manager')`,
     ["manager1", "manager1@example.com", hashed]
   )
-})()
+})();
 
-function authenticate(req, res, next) {
-  //if user is not stored in the session then not logged in 
-  if (!req.session.user) { //if its not a requested user w the session then somethings wrong
+function authenticate(req, res, next) { 
+  if (!req.session.user) { 
     return res.status(401).json({ error: "Unauthorized" })
   }
-  req.user = req.session.user //saves the session request if user is stored in session and logged in
+  req.user = req.session.user 
   next()
 }
-//only managers 
 function requireManager(req, res, next) {
-  if (req.user.role !== "manager") { //if the requested user is not a manager then issue
+  if (req.user.role !== "manager") { 
     return res.status(403).json({ error: "Sorry Managers Only" })
   }
   next()
 }
-//does the login 
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body
-  if (!username || !password) //if nothing is inputted show this error
+  if (!username || !password) 
     return res.status(400).json({ error: "Username and password required" })
-  //looks up the user in db
   db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
     if (err) return res.status(500).json({ error: err.message })
-    if (!user) return res.status(401).json({ error: "Invalid credentials- wrong username" }) //if its not a user in the user table theres a issue
-    //checks the password with the bycrypted password
+    if (!user) return res.status(401).json({ error: "Invalid credentials- wrong username" }) 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ error: "Invalid credentials- wrong password" }) //if it doesnt match its a issue
-  //saves the info to sessions if they are logged in
+    if (!match) return res.status(401).json({ error: "Invalid credentials- wrong password" })
     req.session.user = {
-      id: user.id, //saves they id
-      username: user.username, //saves they username
-      role: user.role, //saves they role
+      id: user.id, 
+      username: user.username, 
+      role: user.role, 
     }
-
-    res.json({ username: user.username, role: user.role }) //changes it to javascript so easy to read
+    res.json({ username: user.username, role: user.role }) 
   })
 })
 
-//registering a new user
 app.post("/api/register", async (req, res) => {
-  const { username, email, password, role } = req.body;
-  if (!username || !email || !password || !role) //if everything is empty its an issue
+  const { username, email, password, role } = req.body
+  if (!username || !email || !password || !role) 
     return res.status(400).json({ error: "All fields required" })
-  if (!["manager", "employee"].includes(role)) //if its not a manager or employee its an issue
+  if (!["manager", "employee"].includes(role)) 
     return res.status(400).json({ error: "Invalid role" })
-//checks if username and email already exists in sql db
   db.get(
     `SELECT * FROM users WHERE username = ? OR email = ?`,
     [username, email],
     async (err, existing) => {
       if (err) return res.status(500).json({ error: err.message })
-
-      if (existing) //if it exists then its a conflict
+      if (existing) 
         return res.status(409).json({ error: "Username or email already exists" })
 
-      const hashedPassword = await bcrypt.hash(password, 10) //hash the pass
-      //insert a new user into the sql db
+      const hashedPassword = await bcrypt.hash(password, 10) 
       db.run(
         `INSERT INTO users (username, email, password, role)
          VALUES (?, ?, ?, ?)`,
         [username, email, hashedPassword, role],
         function (err) {
           if (err) return res.status(500).json({ error: err.message })
-            //logs in the user after registering via the session
           req.session.user = {
             id: this.lastID,
             username,
             role,
           }
 
-          res.json({ message: "Registered", username, role }) //makes a registered message
+          res.json({ message: "Registered", username, role }) 
         }
       )
     }
   )
 })
-//logout
 app.post("/api/logout", (req, res) => {
   req.session.destroy(() => res.json({ message: "Logged out" }))
 })
-
-//gets the logged in user currently via sessions
 app.get("/api/me", (req, res) => {
-  if (!req.session.user) return res.status(401).json({ error: "Not logged in" }) //if the user is not in the session then they are not logged in
+  if (!req.session.user) return res.status(401).json({ error: "Not logged in" }) 
   res.json(req.session.user)
 })
-//gets all employees from sql db- for managers 
 app.get("/api/employees", authenticate, requireManager, (req, res) => {
   db.all(
     "SELECT id, username, email FROM users WHERE role = 'employee'",
@@ -183,17 +157,14 @@ app.get("/api/employees", authenticate, requireManager, (req, res) => {
     }
   )
 })
-//creates a new employee - manager only
 app.post("/api/employees", authenticate, requireManager, async (req, res) => {
   const { username, email, password } = req.body
 
-  if (!username || !email || !password) { //if nothing inputed then conflict
+  if (!username || !email || !password) { 
     return res.status(400).json({ error: "Username, email and password required" })
   }
-
   try {
     const hashed = await bcrypt.hash(password, 10)
-    //inserts the new employee into sql db
     db.run(
       `
       INSERT INTO users (username, email, password, role)
@@ -201,7 +172,7 @@ app.post("/api/employees", authenticate, requireManager, async (req, res) => {
       `,
       [username, email, hashed],
       function (err) {
-        if (err) { //any errors with username and email if its not unique 
+        if (err) { 
           if (err.message.includes("UNIQUE failed")) {
             if (err.message.includes("users.username")) {
               return res.status(409).json({ error: "Username already exists" })
@@ -220,25 +191,22 @@ app.post("/api/employees", authenticate, requireManager, async (req, res) => {
       }
     )
 
-  } catch (error) { //catch any errors 
+  } catch (error) { 
     return res.status(500).json({ error: "Server error" })
   }
 })
-//delete employee - manager accesss
 app.delete("/api/employees/:id", authenticate, requireManager, (req, res) => {
   db.run(
-    "DELETE FROM users WHERE id = ? AND role = 'employee'", //deletes the user from sql db
+    "DELETE FROM users WHERE id = ? AND role = 'employee'", 
     [req.params.id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message })
-      res.json({ deleted: this.changes }) //shows how many were deleted
+      res.json({ deleted: this.changes }) 
     }
   )
 })
-//gets shift of week
 app.get('/api/shifts', (req, res) => {
   const weekStart = req.query.week
-  //gets the shift data from sql db
   const sql = `
     SELECT s.id, s.date, s.start_time, s.end_time, s.employee_id, u.username as employee_name
     FROM shifts s
@@ -250,14 +218,11 @@ app.get('/api/shifts', (req, res) => {
     res.json(rows)
   })
 })
-//get all shifts of the week
 app.get("/api/shifts/week", (req, res) => {
-  const { start, end } = req.query //pulling the start and end 
-  //i need the start and end so i need to make sure its actually there
+  const { start, end } = req.query 
   if (!start || !end) {
     return res.status(400).json({ error: "Missing start or end date" })
-  } //connecting the shifts with the employee name with joining the users table and shifts table 
-  // + only returning dates by start time end time + ordering like a schedule all in sql 
+  } 
   const sql = `
     SELECT s.id, s.date, s.start_time, s.end_time,
            s.employee_id, u.username AS employee_name
@@ -266,33 +231,28 @@ app.get("/api/shifts/week", (req, res) => {
     WHERE s.date >= ? AND s.date <= ?
     ORDER BY s.date, s.start_time
   `
-  db.all(sql, [start, end], (err, rows) => { //run the sql and pass the start and end 
-    if (err) return res.status(500).json({ error: err.message }) //if any issues show an error message
-    res.json(rows) //if it works though this basically sends the matching list to the client side 
+  db.all(sql, [start, end], (err, rows) => { 
+    if (err) return res.status(500).json({ error: err.message }) 
+    res.json(rows) 
   })
 })
 
-//create shift
 app.post('/api/shifts', async (req, res) => {
   try {
     const { date, start_time, end_time, employee_id } = req.body;
-    //if its not the correct employee id then issue
-    if (!employee_id) return res.status(400).json({ error: 'Missing employee_id' });
-    if (!date || !start_time || !end_time)  //if its missing a date or time issue
-      return res.status(400).json({ error: 'Missing date or time' });
-    //if everything good then all info about date starttime endtime id is inserted into shifts sql db
+    if (!employee_id) return res.status(400).json({ error: 'Missing employee_id' })
+    if (!date || !start_time || !end_time)  
+      return res.status(400).json({ error: 'Missing date or time' })
     const id = await runAsync(
       'INSERT INTO shifts (date, start_time, end_time, employee_id) VALUES (?, ?, ?, ?)',
       [date, start_time, end_time, employee_id]
     )
-    //if its sucessful then cool
     res.json({ success: true, id });
-  } catch (err) { //if its not then say it failed to save the shift
+  } catch (err) { 
     console.error(err);
     res.status(500).json({ error: 'Failed to save shift' })
   }
 })
-//starts the server 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`)
 })

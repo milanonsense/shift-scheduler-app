@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import dayjs from 'dayjs';
-import { useAuth } from './AuthContext';
+import React, { useState, useEffect } from 'react'
+import dayjs from 'dayjs'
+import { useAuth } from './AuthContext'
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const SHIFTS = [
   ['7:00', '3:00'],
   ['8:00', '3:00'],
@@ -12,24 +12,21 @@ const SHIFTS = [
   ['3:00', '8:00'],
   ['3:00', '9:00'],
   ['4:00', '9:00'],
-];
-
+]
 export default function ScheduleTable() {
   const [employees, setEmployees] = useState([])
   const [schedule, setSchedule] = useState({})
   const [currentWeek, setCurrentWeek] = useState(dayjs())
   const { user } = useAuth()
   const isManager = user?.role === 'manager'
-
   useEffect(() => {
     fetch('http://localhost:5000/api/employees', {
       credentials: "include"
     })
       .then(res => res.json())
       .then(data => setEmployees(data))
-      .catch(err => console.error('Error fetching employees:', err));
-  }, []);
-
+      .catch(err => console.error('Error fetching employees:', err))
+  }, [])
   useEffect(() => {
     fetch(`http://localhost:5000/api/shifts?week=${currentWeek.format('YYYY-MM-DD')}`)
       .then(res => res.json())
@@ -42,22 +39,18 @@ export default function ScheduleTable() {
         })
         setSchedule(loaded)
       })
-      .catch(err => console.error('Error fetching shifts:', err));
+      .catch(err => console.error('Error fetching shifts:', err))
   }, [currentWeek])
-
   const getDateForDay = (index, weekStart = currentWeek) =>
     weekStart.startOf('week').add(1 + index, 'day').format('YYYY-MM-DD')
-
   const handleSelect = (dayIndex, shift, employeeId) => {
     if (!isManager) return
     const date = getDateForDay(dayIndex)
     const key = `${date}_${shift[0]}-${shift[1]}`
     setSchedule(prev => ({ ...prev, [key]: employeeId }))
   }
-
   const handleSave = async () => {
     if (!isManager) return alert('Only managers can modify schedules.')
-
     const conflicts = {};
     for (const key in schedule) {
       const [date] = key.split('_')
@@ -69,7 +62,6 @@ export default function ScheduleTable() {
       }
       conflicts[date][employee] = true;
     }
-
     const payloads = Object.entries(schedule)
       .filter(([_, employee_id]) => employee_id && employee_id !== '')
       .map(([key, employee_id]) => {
@@ -77,7 +69,6 @@ export default function ScheduleTable() {
         const [start_time, end_time] = timeRange.split('-')
         return { date, start_time, end_time, employee_id }
       })
-
     for (const payload of payloads) {
       await fetch('http://localhost:5000/api/shifts', {
         method: 'POST',
@@ -85,8 +76,7 @@ export default function ScheduleTable() {
         body: JSON.stringify(payload),
       })
     }
-
-    alert('Schedule saved');
+    alert('Schedule saved')
   }
 
   return (

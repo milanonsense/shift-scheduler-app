@@ -2,12 +2,9 @@ import React, { useState, useEffect } from "react"
 import dayjs from "dayjs"
 import isoWeek from "dayjs/plugin/isoWeek"
 import { useAuth } from "./AuthContext"
-import { Container, Card, Table, Button, Row, Col, Badge } from "react-bootstrap" //using bootstrap framework for api for schedule
-
-dayjs.extend(isoWeek) //allows for monday - sunday shifts which i have and would ruin things if i didnt add this
-
+import { Container, Card, Table, Button, Row, Col, Badge } from "react-bootstrap" 
+dayjs.extend(isoWeek) 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
 const SHIFTS = [
   ["7:00", "3:00"],
   ["8:00", "3:00"],
@@ -20,39 +17,36 @@ const SHIFTS = [
 ]
 export default function ViewSchedule() { 
   const [schedule, setSchedule] = useState({})
-  const [currentWeek, setCurrentWeek] = useState(dayjs()) //tracks the week the user is currently looking at but defaults to the current week with dayjs
+  const [currentWeek, setCurrentWeek] = useState(dayjs()) 
   const { user } = useAuth()
-  useEffect(() => { //when the week changes reload schedule
+  useEffect(() => { 
     const fetchShifts = async () => {
       try {
-        const weekStart = currentWeek.startOf("isoWeek").format("YYYY-MM-DD") //start
-        const weekEnd = currentWeek.endOf("isoWeek").format("YYYY-MM-DD") //end
-      //fetch for shift data from backend
+        const weekStart = currentWeek.startOf("isoWeek").format("YYYY-MM-DD")
+        const weekEnd = currentWeek.endOf("isoWeek").format("YYYY-MM-DD") 
         const res = await fetch(
           `http://localhost:5000/api/shifts/week?start=${weekStart}&end=${weekEnd}`
         )
         const data = await res.json()
-        const shiftsArray = Array.isArray(data) ? data : [] //make the data into a array
+        const shiftsArray = Array.isArray(data) ? data : [] 
         const loaded = {} 
         shiftsArray.forEach((shift) => {
-          const key = `${shift.date}_${shift.start_time}-${shift.end_time}` //the key helps with identification and pulling so shift date and shift start and end is what i need
-          loaded[key] = shift.employee_name //attaches it to workers name
+          const key = `${shift.date}_${shift.start_time}-${shift.end_time}` 
+          loaded[key] = shift.employee_name 
         })
-        setSchedule(loaded) //sets the schedule with all that information
+        setSchedule(loaded) 
       } catch (err) {
-        console.error("Failed to load shifts", err) //if theres an error then show its an error
+        console.error("Failed to load shifts", err) 
       }
     }
-
-    fetchShifts() //this is a rerun to get next week and the week befores schedule
+    fetchShifts() 
   }, [currentWeek])
-  const getDateForDay = (index) => { //helps with actial dates for the week go day by day
+  const getDateForDay = (index) => { 
     return currentWeek.startOf("isoWeek").add(index, "day").format("YYYY-MM-DD")
   }
 
   return (
     <Container className="mt-4">
-      {/* Header using card*/}
       <Card className="shadow-sm mb-4">
         <Card.Body>
           <h2 className="fw-bold">Weekly Shift Schedule</h2>
@@ -61,8 +55,6 @@ export default function ViewSchedule() {
           </p>
         </Card.Body>
       </Card>
-
-      {/* Week Controls week before n week after buttons*/}
       <Row className="align-items-center mb-3">
         <Col xs="auto">
           <Button
@@ -88,15 +80,12 @@ export default function ViewSchedule() {
           </Button>
         </Col>
       </Row>
-
-      {/*Main schedule*/}
       <Card className="shadow-sm">
         <Card.Body>
           <Table bordered striped hover responsive>
             <thead className="table-dark">
               <tr>
                 <th>Shift</th>
-                {/* Header for each day of the week */}
                 {DAYS.map((day, i) => (
                   <th key={i} className="text-center">
                     {day}

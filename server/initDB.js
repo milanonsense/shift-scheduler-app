@@ -1,20 +1,18 @@
-const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const cors = require("cors");
-const bcrypt = require("bcryptjs");
-const bodyParser = require("body-parser");
+const express = require("express")
+const sqlite3 = require("sqlite3").verbose()
+const cors = require("cors")
+const bcrypt = require("bcryptjs")
+const bodyParser = require("body-parser")
 
-const app = express();
-const PORT = 5000;
-app.use(cors());
-app.use(bodyParser.json());
+const app = express()
+const PORT = 5000
+app.use(cors())
+app.use(bodyParser.json())
 
 const db = new sqlite3.Database("./shifts.db", (err) => {
   if (err) console.error("Database connection issue, retry", err.message)
   else console.log("Connected to SQLite database")
 })
-
-//code for login
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body
   db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
@@ -29,7 +27,6 @@ app.post("/api/login", (req, res) => {
     })
   })
 })
-//code for post for shifts
 app.post("/api/shifts", (req, res) => {
   const { employee_id, date, start_time, end_time } = req.body;
 
@@ -44,7 +41,6 @@ app.post("/api/shifts", (req, res) => {
     }
   )
 })
-//shifts by week go to frontend
 app.get("/api/shifts/week", (req, res) => {
   const { start, end } = req.query;
   if (!start || !end) {
@@ -63,14 +59,12 @@ app.get("/api/shifts/week", (req, res) => {
     }
   )
 })
-//get all users basically a list from the code in index.js
 app.get("/api/users", (req, res) => {
   db.all(`SELECT id, username, role FROM users`, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message })
     res.json(rows)
   })
 })
-//starting the server
 app.listen(PORT, () => {
   console.log(`Backend running at http://localhost:${PORT}`)
 })

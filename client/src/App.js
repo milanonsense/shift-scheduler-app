@@ -1,72 +1,57 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
-import ScheduleTable from "./components/ScheduleTable";
-import ManageEmployeesPage from "./components/ManageEmployeesPage";
-import AuthPage from "./components/AuthPage";
-import ViewSchedule from "./components/ViewSchedule";
-import { useAuth } from "./components/AuthContext";
-import './styles.css';
-import "bootstrap/dist/css/bootstrap.min.css";
-
+import React from "react"
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom"
+import ScheduleTable from "./components/ScheduleTable"
+import ManageEmployeesPage from "./components/ManageEmployeesPage"
+import AuthPage from "./components/AuthPage"
+import ViewSchedule from "./components/ViewSchedule"
+import { useAuth } from "./components/AuthContext"
+import './styles.css'
+import "bootstrap/dist/css/bootstrap.min.css"
 
 function ManagerRoute({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;   //if it is not a user is not logged in then sends them back to login page
-  if (user.role !== "manager") return <Navigate to="/view" />; //checks if user is manager
-  return children;    //if passes person is logged in as a manager then it returns them to the manager only view 
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" />  
+  if (user.role !== "manager") return <Navigate to="/view" /> 
+  return children    
 }
-//commented this out because i wanted anyone to see the view schedule page and not just employees so if i keep this in it'll be a error message but i need it for laterr
-/*
-function EmployeeRoute({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" />;  //if it is not a user is not logged in then sends them back to login page
-  if (user.role !== "employee") return <Navigate to="/" />; //checks if user is employee if not redirects to start up page
-  return children;    //if passes person is logged in as employee then it returns them to the employee only view
-}
-*/
+
 function AnyUserRoute({ children }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" />
-  return children; // any logged-in user can access
+  return children
 }
-export default function App() {   //logout system obvi
-  const { user, setUser } = useAuth()
 
+// Create a new component that uses useLocation
+function AppContent() {
+  const { user, setUser } = useAuth()
+  const location = useLocation()
+  
   const handleLogout = () => {
     setUser(null)
   }
-
+  
+  const showNav = user && location.pathname !== '/login'
+  
   return (
-    <Router>
-      {/* Navbar */}
-      <nav style={{ marginBottom: 20 }}>
-        {user?.role === "manager" && (    //if it is a manager then they see manage employees and scheduler 
-          <>
-            <Link to="/">Scheduler</Link> | <Link to="/employees">Manage Employees</Link>   
-          </>
-        )} 
-        {" | "}
-        {user && <Link to="/view">View Schedule</Link>}
-        {" | "}
-        {user ? (
-          <button onClick={handleLogout} style={{ marginLeft: 10 }}>Logout</button>   //when someone clicks the logout they get sent to the login page
-        ) : (
-          <Link to="/login">Login</Link>
-        )}
-      </nav>
-
-      {/* Routes */}
+    <>
+      {showNav && (
+        <nav className="nav-container">
+          <div className="nav-wrapper">
+            <div className="nav-links">
+              <Link to="/" className="nav-link">Schedule</Link>
+              <Link to="/view" className="nav-link">View Schedule</Link>
+              <Link to="/manage" className="nav-link">Manage Employees</Link>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">Logout</button>
+          </div>
+        </nav>
+      )}
+      
       <Routes>
         <Route path="/login" element={<AuthPage />} />
-
-        {/* Manager Only */}
         <Route path="/" element={<ManagerRoute><ScheduleTable /></ManagerRoute>} />
-        <Route path="/employees" element={<ManagerRoute><ManageEmployeesPage /></ManagerRoute>} />
-
-        {/* all of the pages*/}
+        <Route path="/manage" element={<ManagerRoute><ManageEmployeesPage /></ManagerRoute>} />
         <Route path="/view" element={<AnyUserRoute><ViewSchedule /></AnyUserRoute>} />
-
-        {/* if any issues go back to this */}
         <Route
           path="*"
           element={
@@ -82,6 +67,14 @@ export default function App() {   //logout system obvi
           }
         />
       </Routes>
+    </>
+  )
+}
+
+export default function App() {   
+  return (
+    <Router>
+      <AppContent />
     </Router>
-  );
+  )
 }
